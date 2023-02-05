@@ -51,6 +51,77 @@ export function activate(ctx: vscode.ExtensionContext) {
       config = readConfig();
     })
   );
+
+  ctx.subscriptions.push(
+    vscode.languages.registerCompletionItemProvider(
+      { language: 'sql', scheme: 'file' },
+      {
+        provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
+          return provideCompletionItems(document, position, BigQuery({
+            keyFilename: config.get("keyFilename"),
+            email: config.get("email")
+          }));
+        }
+      },
+      '.'
+    )
+  );
+}
+
+export async function provideCompletionItems(textDocument, position, bqClient) {
+  const text = textDocument.getText();
+  const table = extractTableName(text, position.line);
+  if (!table) {
+    return Promise.resolve([]);
+  }
+
+  bqClient.projectId = (table.project ? table.project : config.get("projectId"));
+
+  return bqClient.dataset(table.dataset)
+    .table(table.table)
+    .getMetadata()
+    .then(metadata => {
+      if (!metadata[0] || !metadata[0].schema) {
+        return [];
+      }
+      return flattenFields(metadata[0].schema.fields).map(field => {
+        const completionItem = new vscode.CompletionItem(field.name);
+        completionItem.kind = vscode.CompletionItemKind.Field;
+        return completionItem;
+      });
+    });
+}
+
+export function extractTableName(text: string, line: number): { project: string, dataset: string, table: string } | undefined {
+  const lines = text.split('\n');
+  for (let i = line; i < lines.length; i++) {
+    const match = lines[i].match(/FROM\s+`?((?<project>\w+)\.)?(?<dataset>\w+)\.(?<table>\w+)`?/i);
+    if (!match) {
+      continue;
+    }
+
+    return {
+      project: match.groups.project,
+      dataset: match.groups.dataset,
+      table: match.groups.table
+    };
+  }
+  return undefined;
+}
+
+export function flattenFields(fields: any[]): any[] {
+  return fields.reduce((acc, field) => {
+    if (field.fields) {
+      acc = acc.concat(flattenFields(field.fields).map(nestedField => {
+        nestedField.name = field.name + '.' + nestedField.name;
+        return nestedField;
+      }));
+    } else {
+      acc.push(field);
+    }
+
+    return acc;
+  }, []);
 }
 
 //
