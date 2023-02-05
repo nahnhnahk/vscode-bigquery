@@ -18,7 +18,8 @@
   "activationEvents": [
     "onCommand:extension.runAsQuery",
     "onCommand:extension.runSelectedAsQuery",
-    "onCommand:extension.dryRun"
+    "onCommand:extension.dryRun",
+    "onLanguage:sql"
   ],
   "main": "./out/extension",
   "contributes": {
