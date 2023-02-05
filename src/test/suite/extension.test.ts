@@ -18,7 +18,7 @@ import * as vscode from "vscode";
 // import * as path from "path";
 //
 // const fixturePath = path.join(__dirname, "..", "..", "test", "fixtures");
-import { extractTableName, flattenFields, provideCompletionItems } from '../extension';
+import { extractTableName, flattenFields, provideCompletionItems } from '../../extension';
 
 const assert = require('assert');
 
