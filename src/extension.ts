@@ -134,9 +134,9 @@ export function flattenFields(fields: any[]): any[] {
         nestedField.name = field.name + '.' + nestedField.name;
         return nestedField;
       }));
-    } else {
-      acc.push(field);
     }
+    delete field.fields;
+    acc.push(field);
 
     return acc;
   }, []);

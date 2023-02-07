@@ -93,8 +93,10 @@ suite('flattenFields', () => {
     assert.deepStrictEqual(flattenFields(fields), [
       { name: 'field1.nested1' },
       { name: 'field1.nested2' },
+      { name: 'field1' },
       { name: 'field2.nested3' },
-      { name: 'field2.nested4' }
+      { name: 'field2.nested4' },
+      { name: 'field2' },
     ]);
   });
 });
