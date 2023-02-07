@@ -140,10 +140,10 @@ suite('provideCompletionItems', () => {
     tableMetadata = {
       schema: {
         fields: [
-          { name: 'field1.nested1' },
-          { name: 'field1.nested2' },
-          { name: 'field2.nested3' },
-          { name: 'field2.nested4' }
+          { name: 'field1.nested1', type: 'STRING', mode: 'OPTIONAL' },
+          { name: 'field1.nested2', type: 'INTEGER', mode: 'OPTIONAL' },
+          { name: 'field2.nested3', type: 'BYTES', mode: 'REPEATED' },
+          { name: 'field2.nested4', type: 'INTEGER', mode: 'REPEATED' }
         ]
       }
     };
@@ -151,10 +151,10 @@ suite('provideCompletionItems', () => {
     return provideCompletionItems(textDocument, position, bigquery)
       .then(result => {
         assert.deepStrictEqual(result, [
-          {label: 'field1.nested1', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: 'field1.nested2', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: 'field2.nested3', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: 'field2.nested4', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field1.nested1', detail: 'STRING'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field1.nested2', detail: 'INTEGER'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field2.nested3', detail: 'ARRAY<BYTES>'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field2.nested4', detail: 'ARRAY<INTEGER>'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
         ]);
       });
   });

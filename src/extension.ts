@@ -91,7 +91,7 @@ export async function provideCompletionItems(textDocument: vscode.TextDocument, 
       return flattenFields(metadata[0].schema.fields).map(field => {
         if (lastDotInWord >= 0 && field.name.startsWith(word.substring(0, lastDotInWord + 1))) {
           return {
-            label: "…" + field.name.substring(lastDotInWord + 1),
+            label: {label: "…" + field.name.substring(lastDotInWord + 1), detail: " " + getTypeName(field)},
             insertText: field.name,
             filterText: field.name,
             // Make sure that these come on top.
@@ -101,13 +101,21 @@ export async function provideCompletionItems(textDocument: vscode.TextDocument, 
           }
         } else {
           return {
-            label: field.name,
+            label: {label: field.name, detail: " " + getTypeName(field)},
             kind: vscode.CompletionItemKind.Field,
             range: wordRange
           }
         }
       });
     });
+}
+
+function getTypeName(field): string {
+  if (field.mode === "REPEATED") {
+    return "ARRAY<" + field.type + ">";
+  } else {
+    return field.type;
+  }
 }
 
 export function extractTableName(text: string, line: number): { project: string, dataset: string, table: string } | undefined {
