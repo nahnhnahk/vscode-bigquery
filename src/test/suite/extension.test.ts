@@ -139,6 +139,24 @@ suite('provideCompletionItems', () => {
         });
   });
 
+  test('returns an empty array if a table is found with no schema',
+      async () => {
+        const textDocument: vscode.TextDocument =
+        await vscode.workspace.openTextDocument({
+          language: 'sql',
+          content: 'SELECT j\nFROM project.dataset.table',
+        });
+        // position is at the 'j' character
+        const position = new vscode.Position(0, 7);
+
+        tableMetadata = {}; // No schema in table.
+
+        return provideCompletionItems(textDocument, position, bigquery)
+            .then((result) => {
+              assert.deepStrictEqual(result, []);
+            });
+      });
+
   test('returns the completion items for a leading word without dot',
       async () => {
         const textDocument: vscode.TextDocument =

@@ -23,6 +23,9 @@ const configPrefix = 'bigquery';
 let config: vscode.WorkspaceConfiguration;
 const output = vscode.window.createOutputChannel('BigQuery');
 
+// const {DataCatalogClient} = require('@google-cloud/datacatalog').v1;
+// const dataCatalog = new DataCatalogClient();
+
 // CommandMap describes a map of extension commands (defined in package.json)
 // and the function they invoke.
 type CommandMap = Map<string, () => void>;
@@ -99,7 +102,7 @@ export async function provideCompletionItems(
       .table(table.table)
       .getMetadata()
       .then((metadata) => {
-        if (!metadata[0] || !metadata[0].schema) {
+        if (!metadata[0].schema) {
           return [];
         }
         return flattenFields(metadata[0].schema.fields).map((field) => {
