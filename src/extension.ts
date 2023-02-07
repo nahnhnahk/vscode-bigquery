@@ -68,12 +68,16 @@ export function activate(ctx: vscode.ExtensionContext) {
   );
 }
 
-export async function provideCompletionItems(textDocument, position, bqClient) {
+export async function provideCompletionItems(textDocument: vscode.TextDocument, position: vscode.Position, bqClient) {
   const text = textDocument.getText();
   const table = extractTableName(text, position.line);
   if (!table) {
     return Promise.resolve([]);
   }
+
+  const wordRange: vscode.Range = textDocument.getWordRangeAtPosition(position, /[\w\.]+/);
+  let word: string = textDocument.getText(wordRange);
+  const lastDotInWord: number = word.lastIndexOf(".");
 
   bqClient.projectId = (table.project ? table.project : config.get("projectId"));
 
@@ -85,9 +89,23 @@ export async function provideCompletionItems(textDocument, position, bqClient) {
         return [];
       }
       return flattenFields(metadata[0].schema.fields).map(field => {
-        const completionItem = new vscode.CompletionItem(field.name);
-        completionItem.kind = vscode.CompletionItemKind.Field;
-        return completionItem;
+        if (lastDotInWord >= 0 && field.name.startsWith(word.substring(0, lastDotInWord + 1))) {
+          return {
+            label: "…" + field.name.substring(lastDotInWord + 1),
+            insertText: field.name,
+            filterText: field.name,
+            // Make sure that these come on top.
+            sortText: "AAA" + field.name,
+            kind: vscode.CompletionItemKind.Field,
+            range: wordRange
+          }
+        } else {
+          return {
+            label: field.name,
+            kind: vscode.CompletionItemKind.Field,
+            range: wordRange
+          }
+        }
       });
     });
 }

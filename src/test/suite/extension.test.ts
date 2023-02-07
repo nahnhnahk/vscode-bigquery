@@ -102,8 +102,6 @@ suite('flattenFields', () => {
 suite('provideCompletionItems', () => {
   let bigquery;
   let tableMetadata;
-  let textDocument;
-  let position;
 
   setup(() => {
     bigquery = {
@@ -113,22 +111,30 @@ suite('provideCompletionItems', () => {
         })
       })
     };
-    textDocument = {
-      getText: () => 'SELECT *\nFROM project.dataset.table'
-    };
-    position = { line: 1 };
   });
 
-  test('returns an empty array if no table is found', done => {
-    position.line = 0;
-    provideCompletionItems(textDocument, position, bigquery)
+  test('returns an empty array if no table is found', async () => {
+    const textDocument: vscode.TextDocument = await vscode.workspace.openTextDocument({
+      language: 'sql',
+      content: 'SELECT j'  // No FROM clause to extract the table name from.
+    });
+    // position is at the 'j' character
+    const position = new vscode.Position(0, 7);
+
+    return provideCompletionItems(textDocument, position, bigquery)
       .then(result => {
         assert.deepStrictEqual(result, []);
-        done();
       });
   });
 
-  test('returns the completion items', done => {
+  test('returns the completion items for a leading word without dot', async () => {
+    const textDocument: vscode.TextDocument = await vscode.workspace.openTextDocument({
+      language: 'sql',
+      content: 'SELECT j\nFROM project.dataset.table'
+    });
+    // position is at the 'j' character
+    const position = new vscode.Position(0, 7);
+
     tableMetadata = {
       schema: {
         fields: [
@@ -139,20 +145,45 @@ suite('provideCompletionItems', () => {
         ]
       }
     };
-    let makeCompletionItem = (label: string, kind: vscode.CompletionItemKind) => {
-      let completionItem = new vscode.CompletionItem(label);
-      completionItem.kind = kind;
-      return completionItem;
-    }
-    provideCompletionItems(textDocument, position, bigquery)
+    const expectedWordRange: vscode.Range = new vscode.Range(new vscode.Position(0, 7), new vscode.Position(0, 8));
+    return provideCompletionItems(textDocument, position, bigquery)
       .then(result => {
         assert.deepStrictEqual(result, [
-          makeCompletionItem('field1.nested1', vscode.CompletionItemKind.Field),
-          makeCompletionItem('field1.nested2', vscode.CompletionItemKind.Field),
-          makeCompletionItem('field2.nested3', vscode.CompletionItemKind.Field),
-          makeCompletionItem('field2.nested4', vscode.CompletionItemKind.Field),
+          {label: 'field1.nested1', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: 'field1.nested2', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: 'field2.nested3', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: 'field2.nested4', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
         ]);
-        done();
+      });
+  });
+
+  test('returns the completion items for a leading word with dots', async () => {
+    const textDocument: vscode.TextDocument = await vscode.workspace.openTextDocument({
+      language: 'sql',
+      content: 'SELECT abc.def.ghi\nFROM project.dataset.table'
+    });
+    // position is at the 'i' character right before the newline character
+    const position = new vscode.Position(0, 17);
+
+    tableMetadata = {
+      schema: {
+        fields: [
+          { name: 'field1.nested1' },
+          { name: 'abc.def.ghij' },
+          { name: 'abc.def.klm' },
+          { name: 'abc.defg' },
+        ]
+      }
+    };
+    const expectedWordRange: vscode.Range = new vscode.Range(new vscode.Position(0, 7), new vscode.Position(0, 18));
+    return provideCompletionItems(textDocument, position, bigquery)
+      .then(result => {
+        assert.deepStrictEqual(result, [
+          {label: 'field1.nested1', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: '…ghij', insertText: 'abc.def.ghij', filterText: 'abc.def.ghij', sortText: 'AAAabc.def.ghij', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: '…klm', insertText: 'abc.def.klm', filterText: 'abc.def.klm', sortText: 'AAAabc.def.klm', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: 'abc.defg', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+        ]);
       });
   });
 });
