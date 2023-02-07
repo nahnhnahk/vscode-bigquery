@@ -151,10 +151,10 @@ suite('provideCompletionItems', () => {
     return provideCompletionItems(textDocument, position, bigquery)
       .then(result => {
         assert.deepStrictEqual(result, [
-          {label: {label: 'field1.nested1', detail: 'STRING'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: {label: 'field1.nested2', detail: 'INTEGER'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: {label: 'field2.nested3', detail: 'ARRAY<BYTES>'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: {label: 'field2.nested4', detail: 'ARRAY<INTEGER>'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field1.nested1', detail: ' STRING'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field1.nested2', detail: ' INTEGER'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field2.nested3', detail: ' ARRAY<BYTES>'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field2.nested4', detail: ' ARRAY<INTEGER>'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
         ]);
       });
   });
@@ -170,10 +170,10 @@ suite('provideCompletionItems', () => {
     tableMetadata = {
       schema: {
         fields: [
-          { name: 'field1.nested1' },
-          { name: 'abc.def.ghij' },
-          { name: 'abc.def.klm' },
-          { name: 'abc.defg' },
+          { name: 'field1.nested1', type: 'STRING', mode: 'OPTIONAL' },
+          { name: 'abc.def.ghij', type: 'STRING', mode: 'OPTIONAL' },
+          { name: 'abc.def.klm', type: 'STRING', mode: 'OPTIONAL' },
+          { name: 'abc.defg', type: 'STRING', mode: 'OPTIONAL' },
         ]
       }
     };
@@ -181,10 +181,10 @@ suite('provideCompletionItems', () => {
     return provideCompletionItems(textDocument, position, bigquery)
       .then(result => {
         assert.deepStrictEqual(result, [
-          {label: 'field1.nested1', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: '…ghij', insertText: 'abc.def.ghij', filterText: 'abc.def.ghij', sortText: 'AAAabc.def.ghij', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: '…klm', insertText: 'abc.def.klm', filterText: 'abc.def.klm', sortText: 'AAAabc.def.klm', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
-          {label: 'abc.defg', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'field1.nested1', detail: ' STRING'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: '…ghij', detail: ' STRING'}, insertText: 'abc.def.ghij', filterText: 'abc.def.ghij', sortText: 'AAAabc.def.ghij', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: '…klm', detail: ' STRING'}, insertText: 'abc.def.klm', filterText: 'abc.def.klm', sortText: 'AAAabc.def.klm', kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
+          {label: {label: 'abc.defg', detail: ' STRING'}, kind: vscode.CompletionItemKind.Field, range: expectedWordRange},
         ]);
       });
   });
