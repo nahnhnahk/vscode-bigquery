@@ -205,6 +205,43 @@ function readConfig(): vscode.WorkspaceConfiguration {
 }
 
 /**
+ * Handle auth error by prompting the user and optionally open a terminal.
+ */
+function handleAuthError() {
+  const message = 'Your Google Cloud credentials have expired.' +
+      ' Please run "gcloud auth application-default login" in' +
+      ' the terminal to refresh them.';
+  const action = 'Open Terminal';
+
+  vscode.window.showErrorMessage(message, action).then((selectedAction) => {
+    if (selectedAction === action) {
+      // Open the integrated terminal and pre-fill the command
+      const terminal = vscode.window.createTerminal(
+          'Google Cloud Authentication');
+      terminal.sendText('gcloud auth application-default login', false);
+      terminal.show();
+    }
+  });
+}
+
+/**
+ * Handle query errors by showing error message with optional prompt for users
+ * on the next step.
+ * @param {any} error The error object.
+ */
+export function handleQueryError(error: any) {
+  // vscode.window.showErrorMessage(`Failed to query BigQuery: ${err}`);
+  // Check if the error is an authentication error or missing credentials
+  // file
+  if (error.code && (error.code === 401 || error.code === 'ENOENT')) {
+    handleAuthError();
+  } else {
+    // Handle other errors
+    vscode.window.showErrorMessage(`Failed to query BigQuery: ${error}`);
+  }
+}
+
+/**
  * Issue a query job.
  * @param {string} queryText The query text.
  * @param {boolean} isDryRun Whether dry-run is requested. Defaults to False.
@@ -245,7 +282,7 @@ function query(queryText: string, isDryRun?: boolean): Promise<any> {
         });
       })
       .catch((err) => {
-        vscode.window.showErrorMessage(`Failed to query BigQuery: ${err}`);
+        handleQueryError(err);
         return null;
       });
 

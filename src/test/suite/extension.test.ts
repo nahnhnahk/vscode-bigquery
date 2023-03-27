@@ -14,12 +14,21 @@
 
 // import * as assert from "assert";
 import * as vscode from 'vscode';
+import * as sinon from 'sinon';
 // import * as myExtension from "../extension";
 // import * as path from "path";
 //
 // const fixturePath = path.join(__dirname, "..", "..", "test", "fixtures");
-import {extractTableName, flattenFields, provideCompletionItems}
-  from '../../extension';
+import {
+  extractTableName,
+  flattenFields,
+  provideCompletionItems,
+  handleQueryError,
+} from '../../extension';
+
+import {expect} from 'chai';
+const chai = require('chai');
+chai.use(require('chai-string'));
 
 const assert = require('assert');
 
@@ -255,4 +264,80 @@ suite('provideCompletionItems', () => {
               ]);
             });
       });
+});
+
+/**
+ * Wrapper of Error class that can optionally contains a code.
+ */
+class ErrorWithCode extends Error {
+  code?: string | number;
+
+  /**
+   * Constructor for an ErrorWithCode object
+   *
+   * @param {string} message The error message
+   * @param {string|number} code The error code if any
+   */
+  constructor(message: string, code?: string | number) {
+    super(message);
+    this.code = code;
+    this.name = this.constructor.name;
+  }
+}
+
+suite('Query error handling', function() {
+  teardown(() => {
+    sinon.restore();
+  });
+
+  test('should handle 401 authentication errors', async () => {
+    const authError = new ErrorWithCode('Unauthorized', 401);
+
+    const showErrorMessageStub = sinon.stub(vscode.window, 'showErrorMessage');
+
+    // Simulate user clicking the button.
+    showErrorMessageStub.resolves({title: 'Open Terminal'});
+
+    handleQueryError(authError);
+
+    assert.equal(showErrorMessageStub.called, true);
+
+    const actualErrorMessage = showErrorMessageStub.getCall(0).args[0];
+    expect(actualErrorMessage).to.startsWith(
+        'Your Google Cloud credentials have expired');
+  });
+
+  test('should handle ENOENT authentication errors', async () => {
+    const authError = new ErrorWithCode(
+        'ENOENT: Credentials file not found', 'ENOENT');
+
+    const showErrorMessageStub = sinon.stub(vscode.window, 'showErrorMessage');
+
+    // Simulate user clicking the button.
+    showErrorMessageStub.resolves({title: 'Open Terminal'});
+
+    handleQueryError(authError);
+
+    assert.equal(showErrorMessageStub.called, true);
+
+    const actualErrorMessage = showErrorMessageStub.getCall(0).args[0];
+    expect(actualErrorMessage).to.startsWith(
+        'Your Google Cloud credentials have expired');
+  });
+
+  test('should only show other errors as normal messages', async () => {
+    const authError = 'Some other error';
+
+    const showErrorMessageStub = sinon.stub(vscode.window, 'showErrorMessage');
+
+    handleQueryError(authError);
+
+    assert.equal(showErrorMessageStub.called, true);
+
+    const actualErrorMessage = showErrorMessageStub.getCall(0).args[0];
+    expect(actualErrorMessage).to.not.startsWith(
+        'Your Google Cloud credentials have expired');
+    expect(actualErrorMessage).to.contains(
+        'Failed to query BigQuery: Some other error');
+  });
 });
